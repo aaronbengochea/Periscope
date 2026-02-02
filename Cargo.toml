@@ -1,0 +1,25 @@
+[package]
+name = "periscope"
+version = "0.1.0"
+edition = "2024"
+description = "Options pricing and analytics platform"
+
+[lib]
+name = "periscope"
+path = "src/lib.rs"
+
+[[bin]]
+name = "greeks_test"
+path = "src/bin/greeks_test.rs"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dotenvy = "0.15"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4", features = ["derive"] }
