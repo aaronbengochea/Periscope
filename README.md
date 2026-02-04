@@ -25,7 +25,7 @@ Periscope implements a volatility relative value framework:
 - **Heston Calibration**: Fit stochastic volatility model to extract fair-value IVs
 - **Relative Value**: Trade options that deviate significantly from model fair value
 
-See [`goal.md`](goal.md) for comprehensive quantitative methodology and [`plan.md`](plan.md) for project roadmap.
+See [`goal.md`](goal.md) for comprehensive quantitative methodology, [`quantitative_plan.md`](quantitative_plan.md) for analytics roadmap, and [`infrastructure_plan.md`](infrastructure_plan.md) for systems architecture.
 
 ## Architecture
 
@@ -72,7 +72,8 @@ periscope/
 ├── tests/                  # Integration tests
 ├── py_quick_test/          # Python prototypes (gitignored)
 ├── goal.md                 # Quantitative methodology & technical specs
-├── plan.md                 # Project roadmap & progress tracking
+├── quantitative_plan.md    # Analytics implementation roadmap
+├── infrastructure_plan.md  # Systems architecture & infrastructure roadmap
 └── Makefile                # Build automation
 ```
 
@@ -81,7 +82,8 @@ periscope/
 | Document | Description |
 |----------|-------------|
 | [`goal.md`](goal.md) | Comprehensive quantitative methodology: skew/smile extraction, SVI parameterization, Heston calibration, relative value framework, trade signals |
-| [`plan.md`](plan.md) | Project roadmap with phased implementation plan and progress tracking |
+| [`quantitative_plan.md`](quantitative_plan.md) | Analytics implementation roadmap: IV extraction, skew/smile engines, surface construction, Heston calibration, relative value, trade signals |
+| [`infrastructure_plan.md`](infrastructure_plan.md) | Systems architecture: Rust services, AWS CDK infrastructure, database schemas, API design, frontend components |
 | [`idea.md`](idea.md) | Original strategy concept and trading rationale |
 
 ## Prerequisites
@@ -164,7 +166,7 @@ make clean   # Remove build artifacts
 
 ## Roadmap
 
-See [`plan.md`](plan.md) for detailed roadmap. High-level phases:
+See [`infrastructure_plan.md`](infrastructure_plan.md) for systems architecture and [`quantitative_plan.md`](quantitative_plan.md) for analytics implementation. High-level phases:
 
 1. **Data Infrastructure** — Options chain ingestion, storage, normalization
 2. **Skew Engine** — Delta-space analysis, risk reversal calculation
