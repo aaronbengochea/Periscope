@@ -52,7 +52,7 @@ See [`goal.md`](goal.md) for comprehensive quantitative methodology, [`quantitat
 - Async I/O for handling thousands of concurrent connections
 - Performance comparable to C++ with modern tooling
 
-## Project Structure
+## Current Project Structure
 
 ```
 periscope/
@@ -84,7 +84,7 @@ periscope/
 | [`goal.md`](goal.md) | Comprehensive quantitative methodology: skew/smile extraction, SVI parameterization, Heston calibration, relative value framework, trade signals |
 | [`quantitative_plan.md`](quantitative_plan.md) | Analytics implementation roadmap: IV extraction, skew/smile engines, surface construction, Heston calibration, relative value, trade signals |
 | [`infrastructure_plan.md`](infrastructure_plan.md) | Systems architecture: Rust services, AWS CDK infrastructure, database schemas, API design, frontend components |
-| [`idea.md`](idea.md) | Original strategy concept and trading rationale |
+| [`original_idea.md`](original_idea.md) | Original strategy concept and trading rationale |
 
 ## Prerequisites
 
@@ -178,6 +178,3 @@ See [`infrastructure_plan.md`](infrastructure_plan.md) for systems architecture 
 8. **Trade Signals** — Systematic signal generation
 9. **Execution** — Broker integration, automated trading
 
-## License
-
-MIT
