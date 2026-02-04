@@ -1,23 +1,49 @@
 # Periscope
 
-A high-performance Rust backend for real-time options analysis, visualization, and recommendations.
+A high-performance Rust platform for options volatility surface analysis, relative value identification, and systematic trading.
 
 ## Overview
 
-Periscope is designed to power millisecond-interval options data processing, enabling:
+Periscope is a quantitative options analytics engine designed to:
 
-- **Real-time options chain analysis** with Greeks (Delta, Gamma, Theta, Vega)
-- **Low-latency data streaming** to frontend clients via WebSocket
-- **Options strategy recommendations** based on market conditions
-- **Visual analytics** through a modern, responsive frontend
+1. **Extract volatility skew and smile** from live options chains across all strikes and expirations
+2. **Construct arbitrage-free volatility surfaces** using SVI/SSVI parameterization
+3. **Calibrate Heston stochastic volatility models** to observed market data
+4. **Identify relative value opportunities** by comparing model-implied vs market-implied volatility
+5. **Visualize mispricing** as a temperature-mapped 3D surface (blue = cheap, red = rich)
+6. **Generate systematic trade signals** for skew trades, ratio spreads, and butterflies
+
+The backend is built in Rust for sub-millisecond latency, enabling real-time analysis of rapidly changing options markets.
+
+## Quantitative Strategy
+
+Periscope implements a volatility relative value framework:
+
+- **Skew Analysis**: Compare delta-equivalent puts vs calls to identify directional mispricing
+- **Smile Analysis**: Analyze strike-space curvature to identify tail risk mispricing
+- **Surface Construction**: Build complete 3D IV surfaces across all expirations
+- **Heston Calibration**: Fit stochastic volatility model to extract fair-value IVs
+- **Relative Value**: Trade options that deviate significantly from model fair value
+
+See [`goal.md`](goal.md) for comprehensive quantitative methodology and [`plan.md`](plan.md) for project roadmap.
 
 ## Architecture
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  Market Data    │────▶│    Periscope    │────▶│    Frontend     │
-│  (Massive API)  │     │  (Rust Backend) │     │   (WebSocket)   │
+│  (Massive API)  │     │  (Rust Engine)  │     │   (WebSocket)   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌─────────────────┐
+                        │  Analytics      │
+                        │  ├─ Skew        │
+                        │  ├─ Smile       │
+                        │  ├─ Surface     │
+                        │  ├─ Heston      │
+                        │  └─ RelValue    │
+                        └─────────────────┘
 ```
 
 **Why Rust?**
@@ -31,23 +57,38 @@ Periscope is designed to power millisecond-interval options data processing, ena
 ```
 periscope/
 ├── src/
-│   ├── lib.rs              # Library root
-│   ├── error.rs            # Centralized error types
+│   ├── lib.rs              # Library root with public exports
+│   ├── error.rs            # Centralized error types (thiserror)
 │   ├── bin/                # Binary entry points
-│   ├── client/             # API clients (Massive, etc.)
-│   ├── config/             # Configuration management
+│   │   └── greeks_test.rs  # CLI for options chain fetching
+│   ├── client/             # External API clients
+│   │   └── massive.rs      # Massive API integration
+│   ├── config/             # Environment configuration
 │   ├── models/             # Data structures
-│   └── services/           # Business logic
-├── examples/               # Usage examples
+│   │   ├── greeks.rs       # Greeks (Δ, Γ, Θ, V)
+│   │   └── options.rs      # Option contracts, quotes, trades
+│   └── services/           # Business logic (future: pricing, analytics)
+├── examples/               # Usage examples for library consumers
 ├── tests/                  # Integration tests
-├── py_quick_test/          # Python prototypes
-└── Makefile                # Build commands
+├── py_quick_test/          # Python prototypes (gitignored)
+├── goal.md                 # Quantitative methodology & technical specs
+├── plan.md                 # Project roadmap & progress tracking
+└── Makefile                # Build automation
 ```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`goal.md`](goal.md) | Comprehensive quantitative methodology: skew/smile extraction, SVI parameterization, Heston calibration, relative value framework, trade signals |
+| [`plan.md`](plan.md) | Project roadmap with phased implementation plan and progress tracking |
+| [`idea.md`](idea.md) | Original strategy concept and trading rationale |
 
 ## Prerequisites
 
 - [Rust](https://rustup.rs/) (1.70+)
 - Make
+- Massive API key ([massive.com](https://massive.com))
 
 ## Getting Started
 
@@ -59,6 +100,7 @@ cd Periscope
 
 # Copy environment template and add your API key
 cp .env.example .env
+# Edit .env with your MASSIVE_API_KEY
 ```
 
 ### 2. Build
@@ -116,8 +158,23 @@ make clean   # Remove build artifacts
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `MASSIVE_API_KEY` | Massive API key | Yes |
+| `MASSIVE_API_KEY` | Massive API key for options data | Yes |
 | `MASSIVE_BASE_URL` | API base URL | No (defaults to `https://api.massive.com/v3`) |
+| `RUST_LOG` | Logging level (e.g., `info`, `debug`) | No |
+
+## Roadmap
+
+See [`plan.md`](plan.md) for detailed roadmap. High-level phases:
+
+1. **Data Infrastructure** — Options chain ingestion, storage, normalization
+2. **Skew Engine** — Delta-space analysis, risk reversal calculation
+3. **Smile Engine** — Strike-space analysis, SVI fitting
+4. **Surface Builder** — SSVI parameterization, arbitrage-free interpolation
+5. **Heston Calibration** — Stochastic vol model fitting
+6. **Relative Value** — Model vs market comparison, mispricing detection
+7. **Visualization** — 3D temperature-mapped surface (WebGL)
+8. **Trade Signals** — Systematic signal generation
+9. **Execution** — Broker integration, automated trading
 
 ## License
 
