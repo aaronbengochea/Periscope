@@ -1,14 +1,14 @@
 # Periscope
 
-The goal of this project is to build a high performance/reliability Rust based platform enabling agentic options vol surface analysis, vol relative value identification, and deterministic programatic systematic vol trading. 
+The goal of this project is to build a low latency high reliability Rust based execution platform enabling deterministic programatic systematic vol trading at scale. 
 
-If you feel there is something wrong with the world, instead of complaining, you should aim to fix it. Capital is but a tool and it earns one of the, if not the, highest PCA weights in our current existing world relative to solving real problems. This project acts as my manifesto to the world, fight the good fight, earn your stake in this world, be the agent you were meant to be.
+## Motivation
+
+If you feel there is something wrong with the world, instead of complaining, you should aim to fix it. Capital is but a tool and it earns one of the, if not the, highest PCA weight in our current world when it comes to the enablement of solving real problems. This project acts as my manifesto. Fight the good fight, earn your stake in this world, fulfill your true destiny.
 
 A primal instinct: Risk and Reward. All so that we can free ourselves from the shackels of the modern world: why survive when you can be alive. Proof that past, present, and future are initmately linked. Freedom is precious, and time is not to be squandered or wasted, especially when you were gifted with the ability and belief that you could one day change the world. 
 
-_**SOLUS ET INTREPIDUS**_
-
-_**ATOP FURTIM VIGILANS**_
+_**Sōlus atqve intrepidus**_
 
 ## Overview
 
