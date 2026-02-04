@@ -8,7 +8,7 @@ If you feel there is something wrong with the world, instead of complaining, you
 
 A primal instinct: Risk and Reward. All so that we can free ourselves from the shackels of the modern world: why survive when you can be alive. Proof that past, present, and future are initmately linked. Freedom is precious, and time is not to be squandered or wasted, especially when you were gifted with the ability and belief that you could one day change the world. 
 
-_**Sōlus atqve intrepidus**_
+_**Sōlus Atqve Intrepidus**_
 
 ## Overview
 
