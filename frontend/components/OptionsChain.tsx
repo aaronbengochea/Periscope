@@ -1,3 +1,4 @@
+import React from "react";
 import { OptionsChainResponse, OptionContract } from "@/lib/api";
 
 interface OptionsChainProps {
@@ -35,6 +36,10 @@ export function OptionsChain({ data, currentPrice }: OptionsChainProps) {
 
   // Sort by strike price
   const strikes = Array.from(strikeMap.values()).sort((a, b) => a.strike - b.strike);
+
+  // Find the index where we should insert the current price row
+  // Insert it between the strike just below and just above the current price
+  const currentPriceIndex = strikes.findIndex(row => row.strike >= currentPrice);
 
   // Calculate % change
   const calculateChange = (contract: OptionContract) => {
@@ -113,20 +118,44 @@ export function OptionsChain({ data, currentPrice }: OptionsChainProps) {
         </div>
 
         {/* Data Rows */}
-        {strikes.map((row) => {
+        {strikes.map((row, index) => {
           const isATM = Math.abs(row.strike - currentPrice) < 5; // Within $5 of current price
           const callChange = row.call ? calculateChange(row.call) : null;
           const putChange = row.put ? calculateChange(row.put) : null;
           const callNetChange = row.call ? calculateNetChange(row.call) : null;
           const putNetChange = row.put ? calculateNetChange(row.put) : null;
 
+          // Check if we should insert current price row before this strike
+          const showCurrentPriceRow = index === currentPriceIndex && currentPrice > 0 && currentPrice < row.strike;
+
           return (
-            <div
-              key={row.strike}
-              className={`grid grid-cols-[1fr_auto_1fr] gap-0 border-b border-gray-800 hover:bg-[#1a1a1a] ${
-                isATM ? "bg-yellow-900/20" : ""
-              }`}
-            >
+            <React.Fragment key={`strike-${row.strike}`}>
+              {/* Current Price Row - inserted at the correct position */}
+              {showCurrentPriceRow && (
+                <div
+                  key={`current-price-${currentPrice}`}
+                  className="grid grid-cols-[1fr_auto_1fr] gap-0 border-y-2 border-yellow-400 bg-yellow-900/30"
+                >
+                  {/* Empty left side (Calls) */}
+                  <div className="bg-[#0a0a0a] px-2 py-3"></div>
+
+                  {/* Current Price - Center */}
+                  <div className="bg-[#0a0a0a] px-4 py-3 text-base font-bold text-center min-w-[80px] text-yellow-400">
+                    ${fmt(currentPrice)} ← Current
+                  </div>
+
+                  {/* Empty right side (Puts) */}
+                  <div className="bg-[#0a0a0a] px-2 py-3"></div>
+                </div>
+              )}
+
+              {/* Regular strike row */}
+              <div
+                key={row.strike}
+                className={`grid grid-cols-[1fr_auto_1fr] gap-0 border-b border-gray-800 hover:bg-[#1a1a1a] ${
+                  isATM ? "bg-yellow-900/20" : ""
+                }`}
+              >
               {/* CALLS Data */}
               <div className="grid grid-cols-11 gap-px bg-gray-800 p-px">
                 <div className="bg-[#0a0a0a] px-2 py-2 text-xs text-center">{fmt(row.call?.last_quote?.bid)}</div>
@@ -184,13 +213,26 @@ export function OptionsChain({ data, currentPrice }: OptionsChainProps) {
                 <div className="bg-[#0a0a0a] px-2 py-2 text-xs text-center">{fmt(row.put?.last_quote?.bid)}</div>
               </div>
             </div>
+            </React.Fragment>
           );
         })}
       </div>
 
       {/* Current Price Indicator */}
-      <div className="mt-4 text-sm text-gray-400">
-        Current Price: <span className="text-white font-semibold">${fmt(currentPrice)}</span>
+      <div className="mt-4 flex items-center gap-3">
+        <span className="text-sm text-gray-400">Current Price:</span>
+        {currentPrice > 0 ? (
+          <>
+            <span className="text-xl font-bold text-yellow-400">${fmt(currentPrice)}</span>
+            {data.results.find(c => c.underlying_asset?.ticker)?.underlying_asset?.ticker && (
+              <span className="text-sm text-gray-500">
+                ({data.results.find(c => c.underlying_asset?.ticker)?.underlying_asset?.ticker})
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-sm text-red-400">Price not available in API response</span>
+        )}
       </div>
     </div>
   );

@@ -70,6 +70,21 @@ export interface OptionsChainResponse {
 
 // API functions
 export async function fetchOptionsChain(ticker: string): Promise<OptionsChainResponse> {
+  console.log(`[Frontend API] Fetching options chain for ticker: ${ticker}`);
+
   const { data } = await apiClient.get<OptionsChainResponse>(`/options/${ticker}`);
+
+  console.log(`[Frontend API] Received response:`, {
+    status: data.status,
+    request_id: data.request_id,
+    total_contracts: data.results?.length || 0,
+    first_contract: data.results?.[0] || null,
+  });
+
+  // Log full first contract for debugging
+  if (data.results && data.results.length > 0) {
+    console.log(`[Frontend API] First contract (full):`, JSON.stringify(data.results[0], null, 2));
+  }
+
   return data;
 }

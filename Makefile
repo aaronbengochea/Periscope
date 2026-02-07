@@ -5,7 +5,7 @@
 # Run `make` or `make help` to see all available commands.
 # ==============================================================================
 
-.PHONY: build build-release run run-release check test fmt lint clean help
+.PHONY: build build-release run run-release check test fmt lint clean help run_go_front docker-up docker-down docker-logs docker-build docker-restart
 
 # ==============================================================================
 # DEFAULT TARGET
@@ -24,6 +24,14 @@ help:
 	@echo "  run            Run debug binary"
 	@echo "  run-release    Run release binary"
 	@echo "  example        Run basic_usage example"
+	@echo "  run_go_front   Run Go backend + Next.js frontend (topological order)"
+	@echo ""
+	@echo "Docker:"
+	@echo "  docker-build   Build Docker images"
+	@echo "  docker-up      Start all services with Docker Compose"
+	@echo "  docker-down    Stop all services"
+	@echo "  docker-logs    View logs from all services"
+	@echo "  docker-restart Restart all services"
 	@echo ""
 	@echo "Test & Lint:"
 	@echo "  test           Run all tests"
@@ -133,3 +141,74 @@ lint:
 #   - Use when switching branches or troubleshooting build issues
 clean:
 	cargo clean
+
+# ==============================================================================
+# GO + FRONTEND TARGETS
+# ==============================================================================
+
+# run_go_front: Starts Go backend and Next.js frontend in topological order.
+#   - Starts Go backend first (listens on :8080)
+#   - Waits 2 seconds for backend to initialize
+#   - Starts Next.js frontend (listens on :3000)
+#   - Ctrl+C stops both processes gracefully
+#   - View at http://localhost:3000
+run_go_front:
+	@echo "Starting Go backend on :8080..."
+	@cd backend-go && make run & GO_PID=$$!; \
+	sleep 2; \
+	echo "Starting Next.js frontend on :3000..."; \
+	echo "Press Ctrl+C to stop both services"; \
+	cd frontend && npm run dev; \
+	kill $$GO_PID 2>/dev/null || true
+
+# ==============================================================================
+# DOCKER TARGETS
+# ==============================================================================
+
+# docker-build: Build Docker images for all services
+#   - Builds backend and frontend images
+#   - Uses docker-compose build with no cache
+docker-build:
+	@echo "Building Docker images..."
+	docker-compose build --no-cache
+
+# docker-up: Start all services with Docker Compose
+#   - Builds images if needed
+#   - Starts services in detached mode
+#   - Backend: http://localhost:8080
+#   - Frontend: http://localhost:3000
+#   - View logs with: make docker-logs
+docker-up:
+	@echo "Starting Docker services..."
+	docker-compose up -d --build
+	@echo ""
+	@echo "✓ Services started!"
+	@echo "  Backend:  http://localhost:8080"
+	@echo "  Frontend: http://localhost:3000"
+	@echo ""
+	@echo "View logs with: make docker-logs"
+	@echo "Stop services with: make docker-down"
+
+# docker-down: Stop and remove all containers
+#   - Stops all running containers
+#   - Removes containers and networks
+#   - Preserves volumes and images
+docker-down:
+	@echo "Stopping Docker services..."
+	docker-compose down
+
+# docker-logs: View logs from all services
+#   - Shows logs from backend and frontend
+#   - Follows logs in real-time
+#   - Press Ctrl+C to exit
+docker-logs:
+	@echo "Viewing Docker logs (Ctrl+C to exit)..."
+	docker-compose logs -f --tail=100
+
+# docker-restart: Restart all services
+#   - Stops and starts all containers
+#   - Useful after code changes
+docker-restart:
+	@echo "Restarting Docker services..."
+	docker-compose restart
+	@echo "✓ Services restarted"

@@ -15,6 +15,32 @@ export default function Home() {
     enabled: !!ticker,
   });
 
+  // Extract current price and ticker from the first contract that has it
+  const currentPrice = data?.results?.find(
+    (contract) => contract.underlying_asset?.price
+  )?.underlying_asset?.price || 0;
+
+  const underlyingTicker = data?.results?.find(
+    (contract) => contract.underlying_asset?.ticker
+  )?.underlying_asset?.ticker || ticker;
+
+  // Debug: log current price extraction
+  if (data && data.results.length > 0) {
+    console.log("[Frontend Page] Current price extraction:");
+    console.log("  - Searching through", data.results.length, "contracts");
+    console.log("  - First contract underlying_asset:", data.results[0]?.underlying_asset);
+    console.log("  - Extracted current price:", currentPrice);
+
+    if (currentPrice === 0) {
+      console.warn("[Frontend Page] ⚠ Current price is 0! Checking all contracts...");
+      data.results.slice(0, 5).forEach((contract, i) => {
+        console.log(`  - Contract ${i} underlying_asset:`, contract.underlying_asset);
+      });
+    } else {
+      console.log(`[Frontend Page] ✓ Current price found: $${currentPrice}`);
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
@@ -66,7 +92,7 @@ export default function Home() {
         {data && !isLoading && (
           <OptionsChain
             data={data}
-            currentPrice={data.results[0]?.underlying_asset?.price || 0}
+            currentPrice={currentPrice}
           />
         )}
       </div>

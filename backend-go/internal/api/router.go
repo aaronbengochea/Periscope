@@ -20,8 +20,8 @@ func NewRouter(cfg *config.Config, db *database.DB, massiveClient *massive.Clien
 	router.Use(middleware.Logger())                // Structured logging
 	router.Use(middleware.CORS())                  // CORS for frontend
 
-	// Health check endpoint (no API prefix)
-	router.GET("/health", func(c *gin.Context) {
+	// Health check endpoint (supports both GET and HEAD for Docker healthcheck)
+	healthHandler := func(c *gin.Context) {
 		status := gin.H{
 			"status": "healthy",
 			"service": "periscope-api",
@@ -41,7 +41,9 @@ func NewRouter(cfg *config.Config, db *database.DB, massiveClient *massive.Clien
 		}
 
 		c.JSON(http.StatusOK, status)
-	})
+	}
+	router.GET("/health", healthHandler)
+	router.HEAD("/health", healthHandler)
 
 	// Initialize handlers
 	optionsHandler := handlers.NewOptionsHandler(massiveClient)
