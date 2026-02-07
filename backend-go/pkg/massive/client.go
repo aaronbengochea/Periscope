@@ -43,7 +43,62 @@ func NewClient(baseURL, apiKey string) *Client {
 }
 
 // GetOptionsChain fetches the options chain for a given underlying ticker
+// Automatically follows pagination to get all available contracts
 func (c *Client) GetOptionsChain(ctx context.Context, underlyingTicker string, params *OptionsChainParams) (*models.OptionsChainResponse, error) {
+	allResults := []models.OptionContract{}
+	var firstResponse *models.OptionsChainResponse
+	nextURL := ""
+	pageCount := 0
+	maxPages := 20 // Safety limit to prevent infinite loops (20 pages = 5000 contracts)
+
+	for {
+		pageCount++
+		if pageCount > maxPages {
+			log.Printf("[Massive API] ⚠ Reached max page limit (%d), stopping pagination", maxPages)
+			break
+		}
+
+		var response *models.OptionsChainResponse
+		var err error
+
+		if nextURL != "" {
+			// Fetch next page using next_url
+			response, err = c.fetchPage(ctx, nextURL)
+		} else {
+			// Fetch first page with params
+			response, err = c.fetchFirstPage(ctx, underlyingTicker, params)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		// Store first response for metadata
+		if firstResponse == nil {
+			firstResponse = response
+		}
+
+		// Accumulate results
+		allResults = append(allResults, response.Results...)
+		log.Printf("[Massive API] Page %d: fetched %d contracts (total: %d)", pageCount, len(response.Results), len(allResults))
+
+		// Check if there are more pages
+		if response.NextURL == nil || *response.NextURL == "" {
+			break
+		}
+
+		nextURL = *response.NextURL
+	}
+
+	// Return combined response
+	firstResponse.Results = allResults
+	log.Printf("[Massive API] ✓ Total contracts fetched: %d across %d pages", len(allResults), pageCount)
+
+	return firstResponse, nil
+}
+
+// fetchFirstPage fetches the first page of options chain
+func (c *Client) fetchFirstPage(ctx context.Context, underlyingTicker string, params *OptionsChainParams) (*models.OptionsChainResponse, error) {
 	// Apply rate limiting
 	if err := c.limiter.Wait(ctx); err != nil {
 		return nil, fmt.Errorf("rate limit wait failed: %w", err)
@@ -76,8 +131,33 @@ func (c *Client) GetOptionsChain(ctx context.Context, underlyingTicker string, p
 
 	u.RawQuery = q.Encode()
 
+	return c.executeRequest(ctx, u.String())
+}
+
+// fetchPage fetches a page using the next_url from pagination
+func (c *Client) fetchPage(ctx context.Context, nextURL string) (*models.OptionsChainResponse, error) {
+	// Apply rate limiting
+	if err := c.limiter.Wait(ctx); err != nil {
+		return nil, fmt.Errorf("rate limit wait failed: %w", err)
+	}
+
+	// next_url doesn't include API key, so we need to append it
+	u, err := url.Parse(nextURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse next_url: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("apiKey", c.apiKey)
+	u.RawQuery = q.Encode()
+
+	return c.executeRequest(ctx, u.String())
+}
+
+// executeRequest executes the HTTP request and parses the response
+func (c *Client) executeRequest(ctx context.Context, urlStr string) (*models.OptionsChainResponse, error) {
 	// Create request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -99,29 +179,6 @@ func (c *Client) GetOptionsChain(ctx context.Context, underlyingTicker string, p
 	var result models.OptionsChainResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	// Log first contract in full for debugging
-	if len(result.Results) > 0 {
-		firstContractJSON, _ := json.MarshalIndent(result.Results[0], "", "  ")
-		log.Printf("[Massive API] First Option Contract (full structure):\n%s", string(firstContractJSON))
-	}
-
-	// Log response details
-	log.Printf("[Massive API] Options Chain Response for %s:", underlyingTicker)
-	log.Printf("  - Status: %s", result.Status)
-	log.Printf("  - Request ID: %s", result.RequestID)
-	log.Printf("  - Total contracts: %d", len(result.Results))
-
-	// Check first few contracts for underlying asset data
-	if len(result.Results) > 0 {
-		firstContract := result.Results[0]
-		log.Printf("  - First contract ticker: %v", getStringValue(firstContract.Details, "ticker"))
-		log.Printf("  - First contract has underlying_asset: %v", firstContract.UnderlyingAsset != nil)
-		if firstContract.UnderlyingAsset != nil {
-			log.Printf("    - underlying_asset.ticker: %v", getStringPtrValue(firstContract.UnderlyingAsset.Ticker))
-			log.Printf("    - underlying_asset.price: %v", getFloatPtrValue(firstContract.UnderlyingAsset.Price))
-		}
 	}
 
 	return &result, nil

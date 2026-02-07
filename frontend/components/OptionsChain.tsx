@@ -79,21 +79,37 @@ export function OptionsChain({ data, currentPrice }: OptionsChainProps) {
   return (
     <div className="overflow-x-auto">
       <div className="inline-block min-w-full">
-        {/* Header */}
+        {/* CALLS / PUTS Label Row */}
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-0 bg-[#0a0a0a] border-b-2 border-blue-500">
+          {/* CALLS Label */}
+          <div className="px-4 py-2 text-center">
+            <span className="text-lg font-bold text-green-400">CALLS</span>
+          </div>
+
+          {/* Empty center */}
+          <div className="px-4 py-2 min-w-[80px]"></div>
+
+          {/* PUTS Label */}
+          <div className="px-4 py-2 text-center">
+            <span className="text-lg font-bold text-red-400">PUTS</span>
+          </div>
+        </div>
+
+        {/* Column Headers */}
         <div className="grid grid-cols-[1fr_auto_1fr] gap-0 bg-[#1a1a1a] border-b border-gray-700">
-          {/* CALLS Header */}
+          {/* CALLS Column Headers */}
           <div className="grid grid-cols-11 gap-px bg-gray-700 p-px">
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Bid</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Ask</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">IV</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Δ</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Γ</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Θ</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">V</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Delta</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Gamma</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Theta</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Vega</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">OI</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Δ%</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Chg%</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Vol</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Δ$</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Chg$</div>
           </div>
 
           {/* STRIKE Header */}
@@ -101,16 +117,16 @@ export function OptionsChain({ data, currentPrice }: OptionsChainProps) {
             STRIKE
           </div>
 
-          {/* PUTS Header */}
+          {/* PUTS Column Headers */}
           <div className="grid grid-cols-11 gap-px bg-gray-700 p-px">
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Δ$</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Chg$</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Vol</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Δ%</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Chg%</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">OI</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">V</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Θ</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Γ</div>
-            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Δ</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Vega</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Theta</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Gamma</div>
+            <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Delta</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">IV</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Ask</div>
             <div className="bg-[#1a1a1a] px-2 py-3 text-xs font-semibold text-center">Bid</div>

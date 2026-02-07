@@ -35,7 +35,8 @@ func (h *OptionsHandler) GetOptionsChain(c *gin.Context) {
 	// Parse optional query parameters
 	params := &massive.OptionsChainParams{}
 
-	// Set default limit to 250 to get all strikes (user can override)
+	// Set default limit to 250 (Massive API maximum per page)
+	// Pagination will automatically fetch all additional pages
 	defaultLimit := 250
 	if limitStr := c.Query("limit"); limitStr != "" {
 		limit, err := strconv.Atoi(limitStr)

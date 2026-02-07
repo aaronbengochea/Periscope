@@ -4,10 +4,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchOptionsChain } from "@/lib/api";
 import { OptionsChain } from "@/components/OptionsChain";
+import { ExpirationDropdown } from "@/components/ExpirationDropdown";
+import { extractUniqueExpirations } from "@/lib/dateUtils";
 
 export default function Home() {
   const [ticker, setTicker] = useState("AAPL");
   const [searchInput, setSearchInput] = useState("AAPL");
+  const [selectedExpiration, setSelectedExpiration] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["options", ticker],
@@ -24,12 +27,33 @@ export default function Home() {
     (contract) => contract.underlying_asset?.ticker
   )?.underlying_asset?.ticker || ticker;
 
+  // Extract unique expiration dates
+  const expirations = data ? extractUniqueExpirations(data.results) : [];
+
+  // Auto-select first expiration when data loads
+  if (data && expirations.length > 0 && !selectedExpiration) {
+    setSelectedExpiration(expirations[0].date);
+  }
+
+  // Filter contracts by selected expiration
+  const filteredData = data && selectedExpiration
+    ? {
+        ...data,
+        results: data.results.filter(
+          contract => contract.details?.expiration_date === selectedExpiration
+        ),
+      }
+    : data;
+
   // Debug: log current price extraction
   if (data && data.results.length > 0) {
     console.log("[Frontend Page] Current price extraction:");
     console.log("  - Searching through", data.results.length, "contracts");
     console.log("  - First contract underlying_asset:", data.results[0]?.underlying_asset);
     console.log("  - Extracted current price:", currentPrice);
+    console.log("  - Total expirations:", expirations.length);
+    console.log("  - Selected expiration:", selectedExpiration);
+    console.log("  - Filtered contracts:", filteredData?.results.length);
 
     if (currentPrice === 0) {
       console.warn("[Frontend Page] ⚠ Current price is 0! Checking all contracts...");
@@ -56,7 +80,7 @@ export default function Home() {
           <h1 className="text-3xl font-bold mb-4">Periscope</h1>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <form onSubmit={handleSearch} className="flex gap-2 mb-4">
             <input
               type="text"
               value={searchInput}
@@ -71,6 +95,18 @@ export default function Home() {
               Search
             </button>
           </form>
+
+          {/* Expiration Dropdown */}
+          {expirations.length > 0 && (
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-400">Expiration:</label>
+              <ExpirationDropdown
+                expirations={expirations}
+                selectedExpiration={selectedExpiration}
+                onSelect={setSelectedExpiration}
+              />
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
@@ -89,9 +125,9 @@ export default function Home() {
         )}
 
         {/* Options Chain */}
-        {data && !isLoading && (
+        {filteredData && !isLoading && (
           <OptionsChain
-            data={data}
+            data={filteredData}
             currentPrice={currentPrice}
           />
         )}
