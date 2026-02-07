@@ -13,6 +13,7 @@ import (
 	"github.com/aaronbengochea/periscope/backend-go/config"
 	"github.com/aaronbengochea/periscope/backend-go/internal/api"
 	"github.com/aaronbengochea/periscope/backend-go/pkg/database"
+	"github.com/aaronbengochea/periscope/backend-go/pkg/massive"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,6 +26,10 @@ func main() {
 
 	// Set Gin mode
 	gin.SetMode(cfg.GinMode)
+
+	// Initialize Massive API client
+	massiveClient := massive.NewClient(cfg.MassiveBaseURL, cfg.MassiveAPIKey)
+	log.Println("✓ Initialized Massive API client")
 
 	// TODO: Initialize database connection
 	// For now, we'll skip database connection since we need the actual connection string
@@ -42,7 +47,7 @@ func main() {
 	}
 
 	// Setup router
-	router := api.NewRouter(cfg, db)
+	router := api.NewRouter(cfg, db, massiveClient)
 
 	// Create HTTP server
 	addr := fmt.Sprintf(":%s", cfg.Port)

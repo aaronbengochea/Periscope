@@ -4,13 +4,15 @@ import (
 	"net/http"
 
 	"github.com/aaronbengochea/periscope/backend-go/config"
+	"github.com/aaronbengochea/periscope/backend-go/internal/api/handlers"
 	"github.com/aaronbengochea/periscope/backend-go/internal/api/middleware"
 	"github.com/aaronbengochea/periscope/backend-go/pkg/database"
+	"github.com/aaronbengochea/periscope/backend-go/pkg/massive"
 	"github.com/gin-gonic/gin"
 )
 
 // NewRouter creates and configures the HTTP router
-func NewRouter(cfg *config.Config, db *database.DB) *gin.Engine {
+func NewRouter(cfg *config.Config, db *database.DB, massiveClient *massive.Client) *gin.Engine {
 	router := gin.New()
 
 	// Global middleware
@@ -41,16 +43,14 @@ func NewRouter(cfg *config.Config, db *database.DB) *gin.Engine {
 		c.JSON(http.StatusOK, status)
 	})
 
+	// Initialize handlers
+	optionsHandler := handlers.NewOptionsHandler(massiveClient)
+
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Options endpoints (to be implemented)
-		v1.GET("/options/:ticker", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "Options endpoint - coming soon",
-				"ticker":  c.Param("ticker"),
-			})
-		})
+		// Options endpoints
+		v1.GET("/options/:ticker", optionsHandler.GetOptionsChain)
 
 		// Portfolio endpoints (to be implemented)
 		v1.GET("/portfolio", func(c *gin.Context) {
