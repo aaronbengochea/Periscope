@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aaronbengochea/periscope/backend-go/internal/models"
@@ -206,6 +207,13 @@ func getFloatPtrValue(ptr *float64) string {
 	return fmt.Sprintf("%.2f", *ptr)
 }
 
+func getInt64PtrValue(ptr *int64) string {
+	if ptr == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%d", *ptr)
+}
+
 // StockSnapshot represents a stock snapshot response
 type StockSnapshot struct {
 	Status    string        `json:"status"`
@@ -230,6 +238,139 @@ type StockSession struct {
 	PreviousClose  *float64 `json:"previous_close,omitempty"`
 	Change         *float64 `json:"change,omitempty"`
 	ChangePercent  *float64 `json:"change_percent,omitempty"`
+}
+
+// GetContractDetails fetches detailed snapshot data for specific option contracts
+// Uses the unified snapshot endpoint to get bid/ask, greeks, and session data
+func (c *Client) GetContractDetails(ctx context.Context, contractTickers []string) ([]models.OptionContract, error) {
+	if len(contractTickers) == 0 {
+		return []models.OptionContract{}, nil
+	}
+
+	log.Printf("[Massive API] Fetching contract details for %d contracts", len(contractTickers))
+	if len(contractTickers) > 0 {
+		sampleSize := 3
+		if len(contractTickers) < sampleSize {
+			sampleSize = len(contractTickers)
+		}
+		log.Printf("[Massive API] First %d contract tickers: %v", sampleSize, contractTickers[:sampleSize])
+	}
+
+	// Unified snapshot endpoint supports up to 250 tickers per request
+	// If we have more, we need to batch them
+	const maxPerRequest = 250
+	var allContracts []models.OptionContract
+
+	for i := 0; i < len(contractTickers); i += maxPerRequest {
+		end := i + maxPerRequest
+		if end > len(contractTickers) {
+			end = len(contractTickers)
+		}
+		batch := contractTickers[i:end]
+
+		// Apply rate limiting
+		if err := c.limiter.Wait(ctx); err != nil {
+			return nil, fmt.Errorf("rate limit wait failed: %w", err)
+		}
+
+		// Build URL for unified snapshot (baseURL already includes /v3)
+		u, err := url.Parse(fmt.Sprintf("%s/snapshot", c.baseURL))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse URL: %w", err)
+		}
+
+		// Add query parameters
+		q := u.Query()
+		q.Set("apiKey", c.apiKey)
+		q.Set("ticker.any_of", strings.Join(batch, ","))
+
+		u.RawQuery = q.Encode()
+
+		// Log the URL (mask API key)
+		logURL := u.String()
+		if len(c.apiKey) > 3 {
+			logURL = strings.Replace(logURL, c.apiKey, c.apiKey[:3]+"***", 1)
+		}
+		log.Printf("[Massive API] Unified snapshot URL: %s", logURL)
+		log.Printf("[Massive API] Unified snapshot request for batch %d-%d", i, end)
+
+		// Create request
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Execute request
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		// Check status code
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
+		}
+
+		// Parse response
+		var result models.OptionsChainResponse
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
+
+		allContracts = append(allContracts, result.Results...)
+		log.Printf("[Massive API] Batch %d-%d: fetched %d contracts", i, end, len(result.Results))
+	}
+
+	log.Printf("[Massive API] ✓ Total contract details fetched: %d", len(allContracts))
+
+	// Log detailed data inspection for first few contracts
+	if len(allContracts) > 0 {
+		// Print full JSON of first contract for debugging
+		contractJSON, _ := json.MarshalIndent(allContracts[0], "", "  ")
+		log.Printf("[Massive API] First contract (full JSON):\n%s", string(contractJSON))
+
+		log.Printf("[Massive API] Inspecting first contract for data availability:")
+		contract := allContracts[0]
+
+		log.Printf("  - Ticker: %v", getStringPtrValue(contract.Details.Ticker))
+
+		// Check last_quote
+		if contract.LastQuote != nil {
+			log.Printf("  - LastQuote exists:")
+			log.Printf("    - Bid: %v", getFloatPtrValue(contract.LastQuote.Bid))
+			log.Printf("    - Ask: %v", getFloatPtrValue(contract.LastQuote.Ask))
+			log.Printf("    - BidSize: %v", getInt64PtrValue(contract.LastQuote.BidSize))
+			log.Printf("    - AskSize: %v", getInt64PtrValue(contract.LastQuote.AskSize))
+		} else {
+			log.Printf("  - LastQuote: nil")
+		}
+
+		// Check greeks
+		if contract.Greeks != nil {
+			log.Printf("  - Greeks exists:")
+			log.Printf("    - Delta: %v", getFloatPtrValue(contract.Greeks.Delta))
+			log.Printf("    - Gamma: %v", getFloatPtrValue(contract.Greeks.Gamma))
+			log.Printf("    - Theta: %v", getFloatPtrValue(contract.Greeks.Theta))
+			log.Printf("    - Vega: %v", getFloatPtrValue(contract.Greeks.Vega))
+		} else {
+			log.Printf("  - Greeks: nil")
+		}
+
+		// Check session
+		if contract.Session != nil {
+			log.Printf("  - Session exists:")
+			log.Printf("    - Change ($): %v", getFloatPtrValue(contract.Session.Change))
+			log.Printf("    - Change (%%): %v", getFloatPtrValue(contract.Session.ChangePercent))
+			log.Printf("    - Close: %v", getFloatPtrValue(contract.Session.Close))
+			log.Printf("    - Volume: %v", getInt64PtrValue(contract.Session.Volume))
+		} else {
+			log.Printf("  - Session: nil")
+		}
+	}
+
+	return allContracts, nil
 }
 
 // GetStockPrice fetches the current stock price for a given ticker

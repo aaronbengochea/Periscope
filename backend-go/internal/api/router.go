@@ -53,6 +53,7 @@ func NewRouter(cfg *config.Config, db *database.DB, massiveClient *massive.Clien
 	{
 		// Options endpoints
 		v1.GET("/options/:ticker", optionsHandler.GetOptionsChain)
+		v1.POST("/options/details", optionsHandler.GetContractDetails)
 
 		// Portfolio endpoints (to be implemented)
 		v1.GET("/portfolio", func(c *gin.Context) {

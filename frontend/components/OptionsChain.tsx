@@ -233,23 +233,6 @@ export function OptionsChain({ data, currentPrice }: OptionsChainProps) {
           );
         })}
       </div>
-
-      {/* Current Price Indicator */}
-      <div className="mt-4 flex items-center gap-3">
-        <span className="text-sm text-gray-400">Current Price:</span>
-        {currentPrice > 0 ? (
-          <>
-            <span className="text-xl font-bold text-yellow-400">${fmt(currentPrice)}</span>
-            {data.results.find(c => c.underlying_asset?.ticker)?.underlying_asset?.ticker && (
-              <span className="text-sm text-gray-500">
-                ({data.results.find(c => c.underlying_asset?.ticker)?.underlying_asset?.ticker})
-              </span>
-            )}
-          </>
-        ) : (
-          <span className="text-sm text-red-400">Price not available in API response</span>
-        )}
-      </div>
     </div>
   );
 }

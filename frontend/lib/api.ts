@@ -36,6 +36,17 @@ export interface DayBar {
   volume?: number;
 }
 
+export interface Session {
+  change?: number;
+  change_percent?: number;
+  close?: number;
+  high?: number;
+  low?: number;
+  open?: number;
+  previous_close?: number;
+  volume?: number;
+}
+
 export interface ContractDetails {
   ticker?: string;
   contract_type?: 'call' | 'put';
@@ -58,6 +69,7 @@ export interface OptionContract {
   last_quote?: LastQuote;
   last_trade?: LastTrade;
   day?: DayBar;
+  session?: Session;
   underlying_asset?: UnderlyingAsset;
 }
 
@@ -85,6 +97,21 @@ export async function fetchOptionsChain(ticker: string): Promise<OptionsChainRes
   if (data.results && data.results.length > 0) {
     console.log(`[Frontend API] First contract (full):`, JSON.stringify(data.results[0], null, 2));
   }
+
+  return data;
+}
+
+export async function fetchContractDetails(contractTickers: string[]): Promise<OptionsChainResponse> {
+  console.log(`[Frontend API] Fetching details for ${contractTickers.length} contracts`);
+
+  const { data } = await apiClient.post<OptionsChainResponse>('/options/details', {
+    contract_tickers: contractTickers,
+  });
+
+  console.log(`[Frontend API] Received contract details:`, {
+    status: data.status,
+    total_contracts: data.results?.length || 0,
+  });
 
   return data;
 }

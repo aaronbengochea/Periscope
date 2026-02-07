@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchOptionsChain } from "@/lib/api";
+import { fetchOptionsChain, fetchContractDetails, OptionContract } from "@/lib/api";
 import { OptionsChain } from "@/components/OptionsChain";
 import { ExpirationDropdown } from "@/components/ExpirationDropdown";
 import { extractUniqueExpirations } from "@/lib/dateUtils";
@@ -35,13 +35,63 @@ export default function Home() {
     setSelectedExpiration(expirations[0].date);
   }
 
+  // Get contracts for selected expiration
+  const contractsForExpiration = useMemo(() => {
+    if (!data || !selectedExpiration) return [];
+    return data.results.filter(
+      contract => contract.details?.expiration_date === selectedExpiration
+    );
+  }, [data, selectedExpiration]);
+
+  // Extract contract tickers for the selected expiration
+  const contractTickers = useMemo(() => {
+    return contractsForExpiration
+      .map(c => c.details?.ticker)
+      .filter((ticker): ticker is string => !!ticker);
+  }, [contractsForExpiration]);
+
+  // Fetch detailed data for selected expiration contracts
+  const { data: detailedData } = useQuery({
+    queryKey: ["contract-details", ticker, selectedExpiration],
+    queryFn: () => fetchContractDetails(contractTickers),
+    enabled: contractTickers.length > 0,
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  // Merge detailed data with basic contract data
+  const enrichedContracts = useMemo(() => {
+    if (!detailedData) return contractsForExpiration;
+
+    // Create a map of detailed contracts by ticker for quick lookup
+    const detailsMap = new Map<string, OptionContract>();
+    detailedData.results.forEach(contract => {
+      if (contract.details?.ticker) {
+        detailsMap.set(contract.details.ticker, contract);
+      }
+    });
+
+    // Merge detailed data into basic contracts
+    return contractsForExpiration.map(contract => {
+      const ticker = contract.details?.ticker;
+      if (ticker && detailsMap.has(ticker)) {
+        const detailed = detailsMap.get(ticker)!;
+        // Merge: detailed data takes precedence
+        return {
+          ...contract,
+          ...detailed,
+          // Ensure details aren't overwritten with undefined
+          details: detailed.details || contract.details,
+        };
+      }
+      return contract;
+    });
+  }, [contractsForExpiration, detailedData]);
+
   // Filter contracts by selected expiration
   const filteredData = data && selectedExpiration
     ? {
         ...data,
-        results: data.results.filter(
-          contract => contract.details?.expiration_date === selectedExpiration
-        ),
+        results: enrichedContracts,
       }
     : data;
 
@@ -79,22 +129,33 @@ export default function Home() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-4">Periscope</h1>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Enter ticker symbol (e.g., AAPL, SPY)"
-              className="flex-1 max-w-md px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-            />
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-            >
-              Search
-            </button>
-          </form>
+          {/* Search Bar and Current Price Row */}
+          <div className="flex gap-4 mb-4 items-center w-full">
+            <form onSubmit={handleSearch} className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Enter ticker symbol (e.g., AAPL, SPY)"
+                className="w-80 px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
+              />
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+              >
+                Search
+              </button>
+            </form>
+
+            {/* Current Price Display - Right Side */}
+            {currentPrice > 0 && (
+              <div className="ml-auto flex items-center gap-3 px-4 py-2 bg-[#1a1a1a] border border-gray-700 rounded-lg">
+                <span className="text-sm text-gray-400">Current Price:</span>
+                <span className="text-xl font-bold text-yellow-400">${currentPrice.toFixed(2)}</span>
+                <span className="text-sm text-gray-500">({underlyingTicker})</span>
+              </div>
+            )}
+          </div>
 
           {/* Expiration Dropdown */}
           {expirations.length > 0 && (

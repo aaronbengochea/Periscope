@@ -112,3 +112,41 @@ func (h *OptionsHandler) GetOptionsChain(c *gin.Context) {
 	log.Printf("[Handler] Sending response with %d contracts to client", len(response.Results))
 	c.JSON(http.StatusOK, response)
 }
+
+// GetContractDetailsRequest represents the request body for fetching contract details
+type GetContractDetailsRequest struct {
+	ContractTickers []string `json:"contract_tickers" binding:"required,min=1,max=250"`
+}
+
+// GetContractDetails handles POST /api/v1/options/details
+// Fetches detailed contract data using the unified snapshot endpoint
+func (h *OptionsHandler) GetContractDetails(c *gin.Context) {
+	var req GetContractDetailsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		appErr := errors.NewBadRequestError("invalid request body", err)
+		c.JSON(appErr.StatusCode, gin.H{"error": appErr.Message})
+		return
+	}
+
+	log.Printf("[Handler] Fetching contract details for %d contracts", len(req.ContractTickers))
+
+	// Fetch contract details from Massive API unified snapshot
+	contracts, err := h.massiveClient.GetContractDetails(c.Request.Context(), req.ContractTickers)
+	if err != nil {
+		log.Printf("[Handler] ✗ Failed to fetch contract details: %v", err)
+		appErr := errors.NewInternalError("failed to fetch contract details", err)
+		c.JSON(appErr.StatusCode, gin.H{"error": appErr.Message})
+		return
+	}
+
+	log.Printf("[Handler] ✓ Received %d contract details", len(contracts))
+
+	// Return the contracts in the same format as options chain
+	response := models.OptionsChainResponse{
+		Status:    "OK",
+		RequestID: c.GetString("request_id"),
+		Results:   contracts,
+	}
+
+	c.JSON(http.StatusOK, response)
+}

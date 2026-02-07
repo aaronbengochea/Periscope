@@ -17,6 +17,7 @@ type OptionContract struct {
 	LastQuote        *LastQuote       `json:"last_quote,omitempty"`
 	LastTrade        *LastTrade       `json:"last_trade,omitempty"`
 	Day              *DayBar          `json:"day,omitempty"`
+	Session          *Session         `json:"session,omitempty"`
 	UnderlyingAsset  *UnderlyingAsset `json:"underlying_asset,omitempty"`
 }
 
@@ -87,6 +88,18 @@ func (d *DayBar) PercentChange(currentPrice float64) *float64 {
 		return &change
 	}
 	return nil
+}
+
+// Session contains session-level trading statistics for the option contract
+type Session struct {
+	Change        *float64 `json:"change,omitempty"`
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+	Close         *float64 `json:"close,omitempty"`
+	High          *float64 `json:"high,omitempty"`
+	Low           *float64 `json:"low,omitempty"`
+	Open          *float64 `json:"open,omitempty"`
+	PreviousClose *float64 `json:"previous_close,omitempty"`
+	Volume        *int64   `json:"volume,omitempty"`
 }
 
 // UnderlyingAsset contains information about the underlying stock
