@@ -29,3 +29,4 @@ Thumbs.db
 # Added by cargo
 
 /target
+Screenshot*.png
