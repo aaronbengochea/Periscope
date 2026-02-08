@@ -54,7 +54,50 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    container_name: periscope-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-periscope}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-periscope}
+      - POSTGRES_DB=${POSTGRES_DB:-periscope}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - periscope-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-periscope}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin4 UI
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: periscope-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@periscope.local}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - periscope-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 networks:
   periscope-network:
     driver: bridge
     name: periscope-network
+
+volumes:
+  postgres_data:
+  pgadmin_data:
