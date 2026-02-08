@@ -189,7 +189,7 @@ run_go_front_pg:
 #   - Ctrl+C stops all services
 doc_run_go_front_pg:
 	@echo "Starting full stack via Docker Compose..."
-	docker compose up backend frontend postgres pgadmin
+	docker compose up backend frontend postgres pgadmin -d
 
 # ==============================================================================
 # DOCKER TARGETS
