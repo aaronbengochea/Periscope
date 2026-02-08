@@ -5,7 +5,7 @@
 # Run `make` or `make help` to see all available commands.
 # ==============================================================================
 
-.PHONY: build build-release run run-release check test fmt lint clean help run_go_front run_go_front_pg docker-up docker-down docker-logs docker-build docker-restart
+.PHONY: build build-release run run-release check test fmt lint clean help run_go_front run_go_front_pg doc_run_go_front_pg docker-up docker-down docker-logs docker-build docker-restart
 
 # ==============================================================================
 # DEFAULT TARGET
@@ -24,8 +24,9 @@ help:
 	@echo "  run            Run debug binary"
 	@echo "  run-release    Run release binary"
 	@echo "  example        Run basic_usage example"
-	@echo "  run_go_front      Run Go backend + Next.js frontend (topological order)"
-	@echo "  run_go_front_pg   Run Go backend + Next.js frontend + PostgreSQL + pgAdmin"
+	@echo "  run_go_front        Run Go backend + Next.js frontend (topological order)"
+	@echo "  run_go_front_pg     Run Go backend + Next.js frontend + PostgreSQL + pgAdmin"
+	@echo "  doc_run_go_front_pg Run full stack via Docker Compose (all services containerized)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-build   Build Docker images"
@@ -179,6 +180,16 @@ run_go_front_pg:
 	echo "Press Ctrl+C to stop both services (containers will keep running)"; \
 	cd frontend && npm run dev; \
 	kill $$GO_PID 2>/dev/null || true
+
+# doc_run_go_front_pg: Runs the full stack via Docker Compose.
+#   - All services (backend, frontend, postgres, pgadmin) run as containers
+#   - Backend:  http://localhost:8080
+#   - Frontend: http://localhost:3000
+#   - pgAdmin:  http://localhost:5050
+#   - Ctrl+C stops all services
+doc_run_go_front_pg:
+	@echo "Starting full stack via Docker Compose..."
+	docker compose up backend frontend postgres pgadmin
 
 # ==============================================================================
 # DOCKER TARGETS
