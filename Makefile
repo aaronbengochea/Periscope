@@ -5,7 +5,7 @@
 # Run `make` or `make help` to see all available commands.
 # ==============================================================================
 
-.PHONY: build build-release run run-release check test fmt lint clean help run_go_front docker-up docker-down docker-logs docker-build docker-restart
+.PHONY: build build-release run run-release check test fmt lint clean help run_go_front run_go_front_pg docker-up docker-down docker-logs docker-build docker-restart
 
 # ==============================================================================
 # DEFAULT TARGET
@@ -24,7 +24,8 @@ help:
 	@echo "  run            Run debug binary"
 	@echo "  run-release    Run release binary"
 	@echo "  example        Run basic_usage example"
-	@echo "  run_go_front   Run Go backend + Next.js frontend (topological order)"
+	@echo "  run_go_front      Run Go backend + Next.js frontend (topological order)"
+	@echo "  run_go_front_pg   Run Go backend + Next.js frontend + PostgreSQL + pgAdmin"
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-build   Build Docker images"
@@ -158,6 +159,24 @@ run_go_front:
 	sleep 2; \
 	echo "Starting Next.js frontend on :3000..."; \
 	echo "Press Ctrl+C to stop both services"; \
+	cd frontend && npm run dev; \
+	kill $$GO_PID 2>/dev/null || true
+
+# run_go_front_pg: Same as run_go_front but also starts PostgreSQL and pgAdmin
+#   via Docker Compose before launching the Go backend and Next.js frontend.
+#   - Starts postgres (:5432) and pgadmin (:5050) containers
+#   - Starts Go backend (:8080)
+#   - Starts Next.js frontend (:3000)
+#   - Ctrl+C stops both local processes (containers keep running)
+#   - Run `make docker-down` to stop containers afterward
+run_go_front_pg:
+	@echo "Starting PostgreSQL and pgAdmin containers..."
+	docker compose up postgres pgadmin -d
+	@echo "Starting Go backend on :8080..."
+	@cd backend-go && make run & GO_PID=$$!; \
+	sleep 2; \
+	echo "Starting Next.js frontend on :3000..."; \
+	echo "Press Ctrl+C to stop both services (containers will keep running)"; \
 	cd frontend && npm run dev; \
 	kill $$GO_PID 2>/dev/null || true
 
